@@ -1,0 +1,8 @@
+{
+  "name": "excel-html-converter",
+  "private": true,
+  "description": "Клиентские библиотеки для рендера отчётов (сводная/таблица/график). node_modules не хранится в репозитории — генерируется через npm install из корня проекта.",
+  "dependencies": {
+    "pivotgrid-js": "^0.1.12"
+  }
+}

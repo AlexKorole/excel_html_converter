@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node / npm (ставится через npm install из package.json)
+node_modules/
+
+# Runtime-данные сервера (создаются автоматически при запуске,
+# содержат загруженные пользователем xlsx и сгенерированные отчёты)
+server/reports/
+
+# Локальные настройки — не хранить в репозитории (используй .env.example
+# как образец при клонировании)
+server/.env
+
+# ОС / редакторы
+.DS_Store
+Thumbs.db
+*.swp

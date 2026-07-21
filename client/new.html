@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Новый отчёт</title>
+  <link rel="stylesheet" href="/client/css/style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Новый отчёт</h1>
+  <p id="form-error" class="error-message" style="display:none;"></p>
+  <form class="upload-form" id="new-report-form">
+    <label>Название отчёта</label>
+    <input type="text" name="name" required>
+
+    <label>Excel-файл (.xlsx)</label>
+    <input type="file" name="file" accept=".xlsx" required>
+
+    <label><input type="checkbox" name="include_connected" value="1">
+      Показывать таблицы, использующиеся как источник сводной</label>
+    <br><br>
+
+    <button class="btn btn-primary" type="submit">Создать</button>
+  </form>
+  <p><a href="/">&larr; К списку отчётов</a></p>
+</div>
+<script src="/client/js/api.js"></script>
+<script src="/client/js/new-report.js"></script>
+</body>
+</html>
