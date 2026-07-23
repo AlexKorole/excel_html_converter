@@ -31,9 +31,10 @@
 
     const li = document.createElement('li');
     li.className = 'report-item';
+    const disabledAttr = r.status === 'processing' ? 'disabled' : '';
     li.innerHTML = `
       <div><span class="report-name">${nameHtml}</span>${statusHtml}</div>
-      <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}">${I18N.t('delete_btn')}</button>
+      <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}" ${disabledAttr}>${I18N.t('delete_btn')}</button>
     `;
     li.querySelector('button').addEventListener('click', async (e) => {
       const id = e.target.getAttribute('data-id');

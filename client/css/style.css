@@ -36,6 +36,7 @@ h1 { font-size: 20px; }
 }
 .btn-primary { background: #1a73e8; color: #fff; }
 .btn-danger { background: #fdecea; color: #c0392b; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 form.upload-form {
   background: #fff;

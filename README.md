@@ -20,12 +20,19 @@ Open http://localhost:8000 in your browser.
 
 ## Configuration
 
-Server settings live in `server/.env` (copy `server/.env.example` to get started):
+This project has **two independent config files** — nothing else. Changing one does not affect the other; if you want both the site and the reports in the same language, set `LANGUAGE` in both.
+
+**`server/.env`** (copy from `server/.env.example`) — server-side settings, restart the server after changing:
 
 - `PORT`, `HOST` — where the server listens.
+- `LANGUAGE` — `ru` or `en`. Controls server error messages *and* everything baked into a generated report page: footers, the "back to reports" nav link, the table's sort/filter UI (search, "Contains"/"Starts with", column headers), and the pivot grid widget itself.
 - `REPORTS_DIR` — where uploaded files and generated reports are stored. Defaults to a `reports/` folder next to wherever you run the server from — deliberately *not* inside the package itself, since `node_modules` gets wiped and recreated by `npm install` at any time, and that would take your reports with it.
+- `TABLE_DEFAULT_ROW_LIMIT`, `PIVOT_DEFAULT_ROW_LIMIT` — covered in their own section below.
 
-Row limits (`TABLE_DEFAULT_ROW_LIMIT`, `PIVOT_DEFAULT_ROW_LIMIT`) are covered in their own section below.
+**`client/js/config.js`** — client-side settings for the report-*list* website itself (`index.html` / `new.html`). Edited directly in the file, no `.env` involved on this side, and no restart needed — just reload the page:
+
+- `LANGUAGE` — `ru` or `en`. Controls only the site's own UI (the list page and the create-report form). Independent of the server's `LANGUAGE` above.
+- `POLL_INTERVAL_MS` (default `3000`) — how often, in milliseconds, the report list re-checks `/api/reports` while at least one report is still "processing", so its status flips to "ready" on its own, without a manual page reload.
 
 ## Project layout
 
