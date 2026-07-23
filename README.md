@@ -23,7 +23,9 @@ Open http://localhost:8000 in your browser.
 Server settings live in `server/.env` (copy `server/.env.example` to get started):
 
 - `PORT`, `HOST` — where the server listens.
-- `TABLE_DEFAULT_ROW_LIMIT`, `PIVOT_DEFAULT_ROW_LIMIT` — row caps applied when the upload form doesn't specify one, to keep very large files from taking excessive time or memory.
+- `REPORTS_DIR` — where uploaded files and generated reports are stored. Defaults to a `reports/` folder next to wherever you run the server from — deliberately *not* inside the package itself, since `node_modules` gets wiped and recreated by `npm install` at any time, and that would take your reports with it.
+
+Row limits (`TABLE_DEFAULT_ROW_LIMIT`, `PIVOT_DEFAULT_ROW_LIMIT`) are covered in their own section below.
 
 ## Project layout
 
@@ -37,6 +39,22 @@ client/
   table-tools/, chart-tools/       - vanilla-JS rendering libraries used by generated reports
   node_modules/pivotgrid-js/       - pivot grid rendering engine (npm dependency)
 ```
+
+## Excel file requirements
+
+- **One kind of content per sheet.** A sheet is either a plain table, or hosts pivot table(s), or hosts chart(s) — not a mix. Multiple pivot tables or charts *can* share one sheet (each becomes its own page in the report); a plain table cannot share a sheet with anything else.
+- **Only classic (worksheet-based) pivot tables** are supported. Pivot tables built on the Data Model / Power Pivot are skipped (with a message in the server log) — rebuild them as a regular pivot on a cell range if you need them in the report.
+- **Supported chart types:** line, bar (column), pie. Other chart types are skipped.
+- Excel's own hard ceiling is 1,048,576 rows per sheet — not something this tool adds, just a fact about `.xlsx` itself.
+
+## Limits & configuration
+
+Two *different* kinds of limit, both configurable in `server/.env` (copy from `server/.env.example`), server restart required after changing:
+
+- **`TABLE_DEFAULT_ROW_LIMIT`** (default 5000) — a hard architectural ceiling, not just a nicety. Sorting/filtering a plain table happens directly on the DOM in the browser, with no virtualization; raising this a lot will make the browser itself noticeably slow on sort/filter, regardless of server power.
+- **`PIVOT_DEFAULT_ROW_LIMIT`** (default 500000) — a soft safety default, not a hard limit. It exists because decoding raw pivot cache rows takes real server time and memory. The pivot grid itself renders fine at any size — feel free to raise this if your server has the time/memory to spare.
+
+If a file has more rows than the limit in effect, the generated report footer says so explicitly ("shown: first N, source may have more"); if everything fit, no such note appears.
 
 ## License
 
