@@ -41,6 +41,8 @@ CHART_TYPE_TAGS = {
     'line3DChart': 'line',
     'barChart': 'bar',
     'bar3DChart': 'bar',
+    'pieChart': 'pie',
+    'pie3DChart': 'pie',
 }
 
 
@@ -182,20 +184,28 @@ def _resolve_theme_colors(z):
 
 
 def _find_solid_fill(sp_pr_el):
-    """Ищет <a:solidFill> либо внутри <a:ln> (цвет линии), либо напрямую (заливка бара)."""
+    """
+    Ищет <a:solidFill>. Приоритет — ПРЯМАЯ заливка (это и есть цвет
+    сектора/бара; у pie/bar рядом почти всегда есть ЕЩЁ одна заливка
+    внутри <a:ln> — это просто цвет тонкой обводки между элементами,
+    не основной цвет). <a:ln> проверяем только как фолбэк — это тот
+    случай, когда своей заливки нет вообще (line-график: там "цвет" —
+    это буквально цвет самой линии, других заливок в spPr не бывает).
+    """
+    direct = sp_pr_el.find(qna('solidFill'))
+    if direct is not None:
+        return direct
     ln = sp_pr_el.find(qna('ln'))
     if ln is not None:
-        sf = ln.find(qna('solidFill'))
-        if sf is not None:
-            return sf
-    return sp_pr_el.find(qna('solidFill'))
+        return ln.find(qna('solidFill'))
+    return None
 
 
-def _extract_series_color(ser_el, theme_colors):
-    sp_pr = ser_el.find(qnc('spPr'))
-    if sp_pr is None:
+def _resolve_fill_color(sp_pr_el, theme_colors):
+    """Общая часть: <a:solidFill> (srgbClr или schemeClr) -> '#RRGGBB' | None."""
+    if sp_pr_el is None:
         return None
-    solid_fill = _find_solid_fill(sp_pr)
+    solid_fill = _find_solid_fill(sp_pr_el)
     if solid_fill is None:
         return None
     srgb = solid_fill.find(qna('srgbClr'))
@@ -205,6 +215,27 @@ def _extract_series_color(ser_el, theme_colors):
     if scheme_clr is not None:
         return theme_colors.get(scheme_clr.get('val'))
     return None
+
+
+def _extract_series_color(ser_el, theme_colors):
+    return _resolve_fill_color(ser_el.find(qnc('spPr')), theme_colors)
+
+
+def _extract_data_point_colors(ser_el, theme_colors):
+    """
+    Только для pie/pie3D — там цвет обычно не на всю серию (она одна),
+    а на каждый КУСОЧЕК отдельно: <c:dPt><c:idx val="N"/><c:spPr>...
+    Возвращает {индекс_кусочка: '#RRGGBB'}.
+    """
+    colors = {}
+    for dpt in ser_el.findall(qnc('dPt')):
+        idx_el = dpt.find(qnc('idx'))
+        if idx_el is None:
+            continue
+        color = _resolve_fill_color(dpt.find(qnc('spPr')), theme_colors)
+        if color is not None:
+            colors[int(idx_el.get('val'))] = color
+    return colors
 
 
 def _extract_axis_bounds(root):
@@ -290,12 +321,19 @@ def parse_chart(chart_xml_bytes, theme_colors=None):
     chart_el = root.find(qnc('chart'))
     axis_min, axis_max = _extract_axis_bounds(root)
 
+    # У pie/pie3D цвет обычно задан не на серию (она одна), а на каждый
+    # кусочек отдельно (<c:dPt>). Берём из первой серии — у pie их и так одна.
+    point_colors = {}
+    if chart_type == 'pie' and type_el.find(qnc('ser')) is not None:
+        point_colors = _extract_data_point_colors(type_el.find(qnc('ser')), theme_colors)
+
     return {
         'chart_type': chart_type,
         'bar_dir': bar_dir,
         'title': _extract_title(root),
         'has_legend': chart_el is not None and chart_el.find(qnc('legend')) is not None,
         'categories': categories,
+        'point_colors': point_colors,
         'axis_min': axis_min,
         'axis_max': axis_max,
         'series': [{'name': s['name'], 'values': s['values'], 'color': s['color']} for s in series],

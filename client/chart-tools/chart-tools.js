@@ -198,6 +198,11 @@
 
   global.ChartTools = {
     init: function (container, config) {
+      if (config.chart_type === 'pie' && global.ChartToolsPie) {
+        global.ChartToolsPie.render(container, config);
+        window.addEventListener('resize', function () { global.ChartToolsPie.render(container, config); });
+        return { rerender: function () { global.ChartToolsPie.render(container, config); } };
+      }
       render(container, config);
       window.addEventListener('resize', function () { render(container, config); });
       return { rerender: function () { render(container, config); } };

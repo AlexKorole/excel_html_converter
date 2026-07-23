@@ -1,0 +1,16 @@
+# Python bytecode cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime-данные (создаются при запуске сервера, содержат загруженные
+# пользователем xlsx и сгенерированные отчёты — не часть пакета)
+server/reports/
+
+# Локальные настройки (не публикуем реальный .env, только .env.example)
+server/.env
+
+# ОС / редакторы
+.DS_Store
+Thumbs.db
+*.swp

@@ -79,6 +79,7 @@ HOST = os.environ.get("HOST", "localhost")
 
 sys.path.insert(0, str(CONVERTERS_DIR))
 import xlsx_report_builder  # noqa: E402 (после правки sys.path и .env)
+import xlsx_pivot_to_grid  # noqa: E402 (для find_pivotgrid_pkg - см. Handler.translate_path)
 
 
 # ── Хранилище (meta.json на отчёт, без общего файла-маппинга) ──────────────
@@ -177,6 +178,29 @@ class Handler(SimpleHTTPRequestHandler):
         # Раздаём статику от корня ПРОЕКТА (на уровень выше server/), чтобы
         # и client/, и server/reports/ были достижимы обычными путями.
         super().__init__(*args, directory=str(PROJECT_ROOT), **kwargs)
+
+    def translate_path(self, path):
+        candidate = super().translate_path(path)
+        if os.path.exists(candidate):
+            return candidate
+
+        # Не нашли внутри PROJECT_ROOT — возможно, речь про pivotgrid-js,
+        # а npm мог "поднять" её выше (hoisting), за пределы папки самого
+        # нашего пакета (обычное дело при установке через npm install:
+        # зависимость оказывается сестрой пакета, а не внутри него).
+        # Пробуем тот же относительный путь от папки, где библиотека
+        # реально найдена — тем же поиском, что уже используют конвертеры.
+        try:
+            pkg_dir = xlsx_pivot_to_grid.find_pivotgrid_pkg()
+            alt_root = pkg_dir.parent
+            rel = os.path.relpath(candidate, str(PROJECT_ROOT))
+            alt_candidate = os.path.join(str(alt_root), rel)
+            if os.path.exists(alt_candidate):
+                return alt_candidate
+        except FileNotFoundError:
+            pass
+
+        return candidate
 
     def do_GET(self):
         if self.path == "/" or self.path == "/index.html":

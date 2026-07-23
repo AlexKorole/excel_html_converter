@@ -49,6 +49,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div id="chart-root" class="chart-tools-root"></div>
 
   <script src="{chart_tools_js_href}"></script>
+  <script src="{chart_tools_pie_js_href}"></script>
   <script src="{data_js_href}"></script>
   <script>
     ChartTools.init(document.getElementById('chart-root'), CHART_CONFIG);
@@ -133,6 +134,7 @@ def generate(xlsx_path, output_html_path, nav=("", "", ""),
         "title": r["title"],
         "has_legend": r["has_legend"],
         "categories": r["categories"],
+        "point_colors": r.get("point_colors", {}),
         "axis_min": r["axis_min"],
         "axis_max": r["axis_max"],
         "series": r["series"],
@@ -150,6 +152,7 @@ def generate(xlsx_path, output_html_path, nav=("", "", ""),
         title="График: " + Path(xlsx_path).name,
         chart_tools_css_href=relhref(tools_pkg / "chart-tools.css", out_dir),
         chart_tools_js_href=relhref(tools_pkg / "chart-tools.js", out_dir),
+        chart_tools_pie_js_href=relhref(tools_pkg / "chart-tools-pie.js", out_dir),
         data_js_href=data_js_path.name,
         sheet_name=r["sheet_name"],
         chart_type=r["chart_type"],

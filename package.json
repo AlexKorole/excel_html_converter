@@ -1,7 +1,24 @@
 {
   "name": "excel-html-converter",
-  "private": true,
-  "description": "Клиентские библиотеки для рендера отчётов (сводная/таблица/график). node_modules не хранится в репозитории — генерируется через npm install из корня проекта.",
+  "version": "1.0.0",
+  "description": "Convert Excel pivot tables, plain tables, and charts into browsable HTML reports, served through a small self-hosted Python web app.",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Aleksandr Korolev <korolevalexa@gmail.com>",
+  "homepage": "https://github.com/AlexKorole/excel_html_converter#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexKorole/excel_html_converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AlexKorole/excel_html_converter/issues"
+  },
+  "keywords": [
+    "excel",
+    "xlsx",
+    "pivot-table",
+    "html-report",
+    "bi"
+  ],
   "dependencies": {
     "pivotgrid-js": "^0.1.12"
   }
