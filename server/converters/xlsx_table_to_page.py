@@ -28,6 +28,7 @@ import os
 from pathlib import Path
 
 from xlsx_to_table import convert_tables
+from report_messages import rt, report_lang
 from xlsx_pivot_to_grid import relhref
 
 DEFAULT_ROW_LIMIT = int(os.environ.get("TABLE_DEFAULT_ROW_LIMIT", 5000))
@@ -73,13 +74,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script src="{table_tools_js_href}"></script>
   <script src="{data_js_href}"></script>
   <script>
-    TableTools.init(document.getElementById('table-tools-root'), TABLE_COLUMNS, TABLE_ROWS);
+    TableTools.init(document.getElementById('table-tools-root'), TABLE_COLUMNS, TABLE_ROWS, '{lang}');
   </script>
 
   <script>{nav_js}</script>
 
   <footer style="text-align:center;padding:12px;font-size:12px;color:#999;">
-    Лист: {sheet_name} · строк: {row_count}{limit_note}
+    {sheet_label}: {sheet_name} · {rows_label}: {row_count}{limit_note}
   </footer>
 </body>
 </html>
@@ -268,7 +269,7 @@ def generate(xlsx_path, output_html_path, include_connected_tables=False,
 
     limit_note = ""
     if r["row_count"] >= effective_limit - 1:
-        limit_note = f" (показаны первые {effective_limit}, в исходнике может быть больше)"
+        limit_note = rt("shown_first_note", limit=effective_limit)
 
     page = HTML_TEMPLATE.format(
         title="Таблица: " + Path(xlsx_path).name,
@@ -278,6 +279,9 @@ def generate(xlsx_path, output_html_path, include_connected_tables=False,
         sheet_name=r["sheet_name"],
         row_count=r["row_count"],
         limit_note=limit_note,
+        sheet_label=rt("sheet_label"),
+        rows_label=rt("rows_label"),
+        lang=report_lang(),
         nav_css=nav_css,
         nav_html=nav_html,
         nav_js=nav_js,

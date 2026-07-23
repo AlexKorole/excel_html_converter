@@ -7,6 +7,8 @@ report_nav.py
 отчёта свой, поэтому это не статичный файл, а генерируемый фрагмент.
 """
 
+from report_messages import rt
+
 NAV_CSS = """
 .report-nav-bar {
   display: flex;
@@ -106,7 +108,7 @@ def render_nav(pages, current_filename):
         '<div class="report-nav-bar">\n'
         '  <button id="report-nav-toggle" class="report-nav-toggle" aria-label="Меню">&#9776;</button>\n'
         '  <nav id="report-nav-menu" class="report-nav-menu">\n'
-        '    <a href="/" class="report-nav-back">&larr; Ко всем отчётам</a>\n'
+        f'    <a href="/" class="report-nav-back">{rt("back_to_reports")}</a>\n'
         + '\n'.join(links) + '\n'
         '  </nav>\n'
         '</div>'

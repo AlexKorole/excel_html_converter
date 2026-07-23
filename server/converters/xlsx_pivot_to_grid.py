@@ -25,6 +25,7 @@ import os
 from pathlib import Path
 
 from xlsx_to_pivotgrid import convert
+from report_messages import rt, report_lang
 
 # По умолчанию — не буквально "без лимита" (это дорого по времени/памяти на
 # больших файлах, см. реальные замеры: ~40 сек и ~700 МБ на 1 млн строк),
@@ -114,7 +115,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     data-disable-constructor-checkbox="true"
     data-demo="true"
     data-disable-drillthrough-panel="true"
-    data-lang="ru">
+    data-lang="{lang}">
   </div>
 
   <!-- Single bundle instead of many script tags -->
@@ -129,7 +130,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script>{nav_js}</script>
 
   <footer style="text-align:center;padding:12px;font-size:12px;color:#999;">
-    Сводная: {pivot_table_name} · строк: {row_count}{limit_note}
+    {pivot_label}: {pivot_table_name} · {rows_label}: {row_count}{limit_note}
   </footer>
 </body>
 </html>
@@ -178,7 +179,7 @@ def generate(xlsx_path, output_html_path, row_limit=None, nav=("", "", ""),
 
     limit_note = ""
     if r.get("truncated"):
-        limit_note = f" (показаны первые {effective_limit}, в исходнике может быть больше)"
+        limit_note = rt("shown_first_note", limit=effective_limit)
 
     # Файл №1 — данные и конфиг для кэша грида
     data_js = DATA_JS_TEMPLATE.format(
@@ -202,6 +203,9 @@ def generate(xlsx_path, output_html_path, row_limit=None, nav=("", "", ""),
         pivot_table_name=r["pivot_table"],
         row_count=r["row_count"],
         limit_note=limit_note,
+        pivot_label=rt("pivot_label"),
+        rows_label=rt("rows_label"),
+        lang=report_lang(),
         nav_css=nav_css,
         nav_html=nav_html,
         nav_js=nav_js,

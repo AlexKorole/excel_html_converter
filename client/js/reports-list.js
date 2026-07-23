@@ -10,9 +10,10 @@
 
   function formatElapsed(createdAt) {
     const seconds = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000));
-    if (seconds < 60) return `${seconds} сек`;
+    const s = I18N.t('seconds_short');
+    if (seconds < 60) return `${seconds} ${s}`;
     const minutes = Math.floor(seconds / 60);
-    return `${minutes} мин ${seconds % 60} сек`;
+    return `${minutes} ${I18N.t('minutes_short')} ${seconds % 60} ${s}`;
   }
 
   function renderItem(r) {
@@ -22,22 +23,22 @@
       statusHtml = '';
     } else if (r.status === 'processing') {
       nameHtml = escapeHtml(r.name);
-      statusHtml = `<span class="report-status status-processing">обрабатывается... (${formatElapsed(r.created_at)})</span>`;
+      statusHtml = `<span class="report-status status-processing">${I18N.t('processing')} (${formatElapsed(r.created_at)})</span>`;
     } else {
       nameHtml = escapeHtml(r.name);
-      statusHtml = `<span class="report-status status-error">ошибка: ${escapeHtml(r.error || '')}</span>`;
+      statusHtml = `<span class="report-status status-error">${I18N.t('error_prefix')} ${escapeHtml(r.error || '')}</span>`;
     }
 
     const li = document.createElement('li');
     li.className = 'report-item';
     li.innerHTML = `
       <div><span class="report-name">${nameHtml}</span>${statusHtml}</div>
-      <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}">Удалить</button>
+      <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}">${I18N.t('delete_btn')}</button>
     `;
     li.querySelector('button').addEventListener('click', async (e) => {
       const id = e.target.getAttribute('data-id');
       const name = e.target.getAttribute('data-name');
-      if (!confirm(`Удалить отчёт «${name}»?`)) return;
+      if (!confirm(I18N.t('confirm_delete', { name }))) return;
       await Api.deleteReport(id);
       await refresh();
     });
@@ -55,7 +56,7 @@
 
     listEl.innerHTML = '';
     if (reports.length === 0) {
-      listEl.innerHTML = '<li>Пока нет ни одного отчёта.</li>';
+      listEl.innerHTML = `<li>${I18N.t('no_reports_yet')}</li>`;
     } else {
       reports.forEach((r) => listEl.appendChild(renderItem(r)));
     }

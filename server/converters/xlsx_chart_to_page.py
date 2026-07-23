@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from xlsx_to_chart import convert_charts
+from report_messages import rt
 from xlsx_pivot_to_grid import relhref
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -58,7 +59,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script>{nav_js}</script>
 
   <footer style="text-align:center;padding:12px;font-size:12px;color:#999;">
-    Лист: {sheet_name} · тип: {chart_type} · серий: {series_count}
+    {sheet_label}: {sheet_name} · {type_label}: {chart_type} · {series_label}: {series_count}
   </footer>
 </body>
 </html>
@@ -157,6 +158,9 @@ def generate(xlsx_path, output_html_path, nav=("", "", ""),
         sheet_name=r["sheet_name"],
         chart_type=r["chart_type"],
         series_count=len(r["series"]),
+        sheet_label=rt("sheet_label"),
+        type_label=rt("type_label"),
+        series_label=rt("series_label"),
         nav_css=nav_css,
         nav_html=nav_html,
         nav_js=nav_js,

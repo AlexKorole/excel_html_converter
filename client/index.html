@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Отчёты</title>
+  <title data-i18n="reports_title">Отчёты</title>
   <link rel="stylesheet" href="/client/css/style.css">
 </head>
 <body>
 <div class="container">
-  <h1>Отчёты</h1>
-  <p><a class="btn btn-primary" href="/new">+ Создать отчёт</a></p>
-  <ul class="report-list" id="report-list"><li>Загрузка...</li></ul>
+  <h1 data-i18n="reports_title">Отчёты</h1>
+  <p><a class="btn btn-primary" href="/new" data-i18n="create_report_btn">+ Создать отчёт</a></p>
+  <ul class="report-list" id="report-list"><li data-i18n="loading">Загрузка...</li></ul>
 </div>
 <script src="/client/js/config.js"></script>
+<script src="/client/js/i18n.js"></script>
 <script src="/client/js/api.js"></script>
 <script src="/client/js/reports-list.js"></script>
 </body>

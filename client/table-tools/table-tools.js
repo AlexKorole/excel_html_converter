@@ -24,6 +24,46 @@
     });
   }
 
+  var I18N = {
+    ru: {
+      blank: '(пусто)',
+      filterAria: 'Фильтр',
+      resetAria: 'Сбросить',
+      resetTitle: 'Сбросить сортировку/фильтр',
+      shownRows: 'Показано строк: {shown} из {total}',
+      searchPlaceholder: 'Поиск...',
+      contains: 'Содержит',
+      startsWith: 'Начинается с',
+      cancel: 'Отмена',
+      selectAll: '(Выбрать все)',
+      truncated: 'Показаны первые 50 из {total} — уточните поиск',
+    },
+    en: {
+      blank: '(blank)',
+      filterAria: 'Filter',
+      resetAria: 'Reset',
+      resetTitle: 'Reset sort/filter',
+      shownRows: 'Showing {shown} of {total} rows',
+      searchPlaceholder: 'Search...',
+      contains: 'Contains',
+      startsWith: 'Starts with',
+      cancel: 'Cancel',
+      selectAll: '(Select all)',
+      truncated: 'Showing first 50 of {total} — refine your search',
+    },
+  };
+
+  function t(lang, key, vars) {
+    var dict = I18N[lang] || I18N.ru;
+    var text = dict[key] || key;
+    if (vars) {
+      Object.keys(vars).forEach(function (k) {
+        text = text.replace('{' + k + '}', vars[k]);
+      });
+    }
+    return text;
+  }
+
   function cellKey(v) {
     return v === null || v === undefined ? '\u0000__blank__' : String(v);
   }
@@ -37,7 +77,7 @@
     return String(a).localeCompare(String(b), 'ru');
   }
 
-  function uniqueValues(rows, key) {
+  function uniqueValues(rows, key, lang) {
     var seen = new Map();
     rows.forEach(function (row) {
       var cell = row[key];
@@ -45,16 +85,17 @@
       var h = cell ? cell.h : '';
       var k = cellKey(v);
       if (!seen.has(k)) {
-        seen.set(k, { v: v, h: h === '' ? '(пусто)' : h });
+        seen.set(k, { v: v, h: h === '' ? t(lang, 'blank') : h });
       }
     });
     return Array.from(seen.values());
   }
 
-  function TableTools(container, columns, rows) {
+  function TableTools(container, columns, rows, lang) {
     this.container = container;
     this.columns = columns;
     this.rows = rows;
+    this.lang = lang || 'ru';
     this.sortKey = null;
     this.sortDir = 1;
     this.filters = {}; // key -> Set(строковых ключей разрешённых значений) | отсутствует = все
@@ -104,8 +145,8 @@
       var clearVisibleCls = isActive ? ' tt-clear-visible' : '';
       return '<th>' +
         '<span class="tt-th-label" data-key="' + col.key + '">' + col.html + sortMark + '</span>' +
-        '<button class="tt-filter-btn' + activeCls + '" data-key="' + col.key + '" aria-label="Фильтр">&#9662;</button>' +
-        '<button class="tt-clear-btn' + clearVisibleCls + '" data-key="' + col.key + '" aria-label="Сбросить" title="Сбросить сортировку/фильтр">&times;</button>' +
+        '<button class="tt-filter-btn' + activeCls + '" data-key="' + col.key + '" aria-label="' + t(self.lang, 'filterAria') + '">&#9662;</button>' +
+        '<button class="tt-clear-btn' + clearVisibleCls + '" data-key="' + col.key + '" aria-label="' + t(self.lang, 'resetAria') + '" title="' + t(self.lang, 'resetTitle') + '">&times;</button>' +
         '</th>';
     }).join('');
 
@@ -121,7 +162,7 @@
     this.container.innerHTML =
       '<table class="tt-table"><thead><tr>' + theadCells + '</tr></thead>' +
       '<tbody>' + tbodyRows + '</tbody></table>' +
-      '<div class="tt-status">Показано строк: ' + visible.length + ' из ' + this.rows.length + '</div>';
+      '<div class="tt-status">' + t(self.lang, 'shownRows', { shown: visible.length, total: this.rows.length }) + '</div>';
 
     Array.prototype.forEach.call(this.container.querySelectorAll('.tt-th-label'), function (el) {
       el.addEventListener('click', function () {
@@ -172,7 +213,7 @@
     var self = this;
     this.closeDropdown();
 
-    var allValues = uniqueValues(this.rows, key);
+    var allValues = uniqueValues(this.rows, key, this.lang);
     var type = this.columnType(key);
     allValues.sort(function (a, b) { return compareValues(a.v, b.v, type); });
     var currentAllowed = this.filters[key];
@@ -184,9 +225,9 @@
     searchWrap.className = 'tt-filter-search';
     var modeId = 'tt-mode-' + key.replace(/[^a-zA-Z0-9]/g, '_');
     searchWrap.innerHTML =
-      '<input type="text" class="tt-filter-search-input" placeholder="Поиск...">' +
-      '<label><input type="radio" name="' + modeId + '" value="contains" checked> Содержит</label>' +
-      '<label><input type="radio" name="' + modeId + '" value="starts"> Начинается с</label>';
+      '<input type="text" class="tt-filter-search-input" placeholder="' + t(self.lang, 'searchPlaceholder') + '">' +
+      '<label><input type="radio" name="' + modeId + '" value="contains" checked> ' + t(self.lang, 'contains') + '</label>' +
+      '<label><input type="radio" name="' + modeId + '" value="starts"> ' + t(self.lang, 'startsWith') + '</label>';
     panel.appendChild(searchWrap);
 
     var listWrap = document.createElement('div');
@@ -197,7 +238,7 @@
     footerWrap.className = 'tt-filter-footer';
     footerWrap.innerHTML =
       '<button class="tt-filter-ok">OK</button>' +
-      '<button class="tt-filter-cancel">Отмена</button>';
+      '<button class="tt-filter-cancel">' + t(self.lang, 'cancel') + '</button>';
     panel.appendChild(footerWrap);
 
     function renderList(query, mode) {
@@ -211,14 +252,14 @@
       var truncated = filtered.length > 50;
 
       listWrap.innerHTML =
-        '<label class="tt-filter-item tt-select-all"><input type="checkbox" class="tt-select-all-cb"> (Выбрать все)</label>' +
+        '<label class="tt-filter-item tt-select-all"><input type="checkbox" class="tt-select-all-cb"> ' + t(self.lang, 'selectAll') + '</label>' +
         shown.map(function (item) {
           var k = cellKey(item.v);
           var checked = !currentAllowed || currentAllowed.has(k);
           return '<label class="tt-filter-item"><input type="checkbox" data-k="' + escapeHtml(k) + '"' +
             (checked ? ' checked' : '') + '> ' + escapeHtml(item.h) + '</label>';
         }).join('') +
-        (truncated ? '<div class="tt-filter-truncated">Показаны первые 50 из ' + filtered.length + ' — уточните поиск</div>' : '');
+        (truncated ? '<div class="tt-filter-truncated">' + t(self.lang, 'truncated', { total: filtered.length }) + '</div>' : '');
 
       var selectAllCb = listWrap.querySelector('.tt-select-all-cb');
       var itemCbs = Array.prototype.slice.call(listWrap.querySelectorAll('input[data-k]'));
@@ -283,8 +324,8 @@
   };
 
   global.TableTools = {
-    init: function (container, columns, rows) {
-      return new TableTools(container, columns, rows);
+    init: function (container, columns, rows, lang) {
+      return new TableTools(container, columns, rows, lang);
     }
   };
 })(window);

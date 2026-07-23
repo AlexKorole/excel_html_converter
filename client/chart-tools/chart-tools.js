@@ -59,8 +59,8 @@
 
   function render(container, config) {
     if (config.chart_type === 'bar' && config.bar_dir === 'bar') {
-      console.warn('ChartTools: горизонтальные bar-графики (barDir="bar") пока не поддерживаются, ' +
-        'рендерю как вертикальные — оси могут не соответствовать оригиналу.');
+      console.warn('ChartTools: horizontal bar charts (barDir="bar") are not supported yet, ' +
+      'rendering as vertical instead — axes may not match the original.');
     }
 
     var W = container.clientWidth || 800;
