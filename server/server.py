@@ -49,8 +49,6 @@ SERVER_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SERVER_DIR.parent
 CONVERTERS_DIR = SERVER_DIR / "converters"
 CLIENT_DIR = PROJECT_ROOT / "client"
-REPORTS_DIR = SERVER_DIR / "reports"
-REPORTS_DIR.mkdir(exist_ok=True)
 
 
 def _load_env(path):
@@ -76,6 +74,17 @@ for _key, _value in _env.items():
 
 PORT = int(os.environ.get("PORT", 8000))
 HOST = os.environ.get("HOST", "localhost")
+
+# REPORTS_DIR — НЕ внутри пакета по умолчанию. При установке через
+# npm install пакет целиком лежит в node_modules/, а node_modules — папка
+# одноразовая (rm -rf node_modules && npm install — обычное дело). Если
+# отчёты (загруженные xlsx + сгенерированные страницы) хранить внутри
+# пакета, они пропадут при переустановке. По умолчанию — папка "reports"
+# там, откуда реально запущена команда (текущая рабочая директория), не
+# рядом со server.py. Переопределяется через REPORTS_DIR в server/.env.
+_reports_dir_setting = os.environ.get("REPORTS_DIR")
+REPORTS_DIR = Path(_reports_dir_setting).resolve() if _reports_dir_setting else (Path.cwd() / "reports").resolve()
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(CONVERTERS_DIR))
 import xlsx_report_builder  # noqa: E402 (после правки sys.path и .env)
@@ -180,25 +189,45 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(PROJECT_ROOT), **kwargs)
 
     def translate_path(self, path):
+        # /server/reports/... — это REPORTS_DIR, который теперь МОЖЕТ
+        # лежать за пределами PROJECT_ROOT (см. комментарий у REPORTS_DIR
+        # выше) — маппим явно, не полагаясь на вложенность в PROJECT_ROOT.
+        path_only = path.split("?", 1)[0].split("#", 1)[0]
+        prefix = "/server/reports/"
+        if path_only.startswith(prefix):
+            rel = unquote(path_only[len(prefix):])
+            return str(REPORTS_DIR / rel)
+
         candidate = super().translate_path(path)
         if os.path.exists(candidate):
             return candidate
 
-        # Не нашли внутри PROJECT_ROOT — возможно, речь про pivotgrid-js,
-        # а npm мог "поднять" её выше (hoisting), за пределы папки самого
-        # нашего пакета (обычное дело при установке через npm install:
-        # зависимость оказывается сестрой пакета, а не внутри него).
-        # Пробуем тот же относительный путь от папки, где библиотека
-        # реально найдена — тем же поиском, что уже используют конвертеры.
-        try:
-            pkg_dir = xlsx_pivot_to_grid.find_pivotgrid_pkg()
-            alt_root = pkg_dir.parent
-            rel = os.path.relpath(candidate, str(PROJECT_ROOT))
-            alt_candidate = os.path.join(str(alt_root), rel)
+        # Не нашли внутри PROJECT_ROOT — вероятно, относительная ссылка на
+        # одну из клиентских библиотек была посчитана исходя из РЕАЛЬНОГО
+        # расположения на диске (может быть где угодно — hoisting в
+        # node_modules, отдельный REPORTS_DIR и т.п.), а не совпадает с
+        # тем, что подразумевает URL. Ищем характерный фрагмент пути и
+        # мапим то, что после него, на реальное расположение библиотеки —
+        # независимо от того, сколько "../" сюда привело.
+        markers = (
+            (os.path.join("node_modules", "pivotgrid-js") + os.sep,
+             lambda: xlsx_pivot_to_grid.find_pivotgrid_pkg()),
+            (os.path.join("client", "table-tools") + os.sep,
+             lambda: CLIENT_DIR / "table-tools"),
+            (os.path.join("client", "chart-tools") + os.sep,
+             lambda: CLIENT_DIR / "chart-tools"),
+        )
+        for marker, get_base_dir in markers:
+            if marker not in candidate:
+                continue
+            try:
+                base_dir = get_base_dir()
+            except FileNotFoundError:
+                continue
+            suffix = candidate.split(marker, 1)[1]
+            alt_candidate = str(base_dir / suffix)
             if os.path.exists(alt_candidate):
                 return alt_candidate
-        except FileNotFoundError:
-            pass
 
         return candidate
 
