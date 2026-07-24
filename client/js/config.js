@@ -1,9 +1,9 @@
 const CONFIG = {
-  // Язык интерфейса сайта: 'ru' или 'en'. Независим от LANGUAGE в
-  // server/.env — тот отвечает за сообщения сервера и сгенерированные
-  // отчёты, этот только за сам сайт (список/форма).
+  // Site UI language: 'ru' or 'en'. Independent of LANGUAGE in
+  // server/.env — that one controls server messages and generated
+  // reports, this one controls only the site itself (list/form).
   LANGUAGE: 'en',
 
-  // Как часто опрашивать /api/reports, пока хоть один отчёт в статусе "processing"
+  // How often to poll /api/reports while at least one report is "processing"
   POLL_INTERVAL_MS: 3000,
 };
