@@ -6,8 +6,12 @@ between Aleksandr Korolev ("Licensor") and [COMPANY/INDIVIDUAL NAME] ("Licensee"
 1. GRANT OF LICENSE
 
    Licensor grants Licensee a non-exclusive, non-transferable, worldwide license
-   to use, integrate, and deploy the excel_html_converter software ("Software") in commercial
-   products and services, subject to the terms of this Agreement.
+   to use, integrate, and deploy the "excel-html-converter" software ("Software") —
+   published on npm as "excel-html-converter" and distributed via the GitHub
+   repository at github.com/AlexKorole/excel_html_converter, regardless of the
+   exact name, spelling, punctuation, or capitalization used in any particular
+   distribution channel — in commercial products and services, subject to the
+   terms of this Agreement.
 
 2. PERMITTED USES
 

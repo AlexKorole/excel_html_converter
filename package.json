@@ -1,6 +1,6 @@
 {
   "name": "excel-html-converter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert Excel pivot tables, plain tables, and charts into browsable HTML reports, served through a small self-hosted Python web app.",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Aleksandr Korolev <korolevalexa@gmail.com>",
