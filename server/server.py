@@ -241,7 +241,7 @@ class Handler(SimpleHTTPRequestHandler):
         # мапим то, что после него, на реальное расположение библиотеки —
         # независимо от того, сколько "../" сюда привело.
         markers = (
-            (os.path.join("node_modules", "pivotgrid-js") + os.sep,
+            ("pivotgrid-js" + os.sep,
              lambda: xlsx_pivot_to_grid.find_pivotgrid_pkg()),
             (os.path.join("client", "table-tools") + os.sep,
              lambda: CLIENT_DIR / "table-tools"),
