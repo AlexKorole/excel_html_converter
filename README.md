@@ -34,6 +34,18 @@ This project has **two independent config files** — nothing else. Changing one
 - `LANGUAGE` — `ru` or `en`. Controls only the site's own UI (the list page and the create-report form). Independent of the server's `LANGUAGE` above.
 - `POLL_INTERVAL_MS` (default `3000`) — how often, in milliseconds, the report list re-checks `/api/reports` while at least one report is still "processing", so its status flips to "ready" on its own, without a manual page reload.
 
+### Keeping your config outside `node_modules`
+
+`npm install` puts both files inside `node_modules`, which gets wiped on every reinstall. Keep your config elsewhere with two optional flags:
+
+```
+python node_modules/excel-html-converter/server/server.py \
+  --server-config /path/to/your/server.env \
+  --client-config /path/to/your/config.js
+```
+
+Both flags are optional and independent of each other — pass either one, both, or neither (falls back to the bundled files). `--server-config` takes a `.env`-style file; `--client-config` takes a `config.js`-style file (same `const CONFIG = {...}` format as the bundled one). Run with `--help` to see them listed.
+
 ## Project layout
 
 ```
