@@ -68,8 +68,8 @@ if _args.client_config:
     if _client_config_candidate.exists():
         CLIENT_CONFIG_OVERRIDE = _client_config_candidate
     else:
-        print(f"[!] --client-config указывает на {_client_config_candidate}, но такого файла нет — "
-              f"использую встроенный client/js/config.js")
+        print(f"[!] --client-config points to {_client_config_candidate}, but that file "
+              f"doesn't exist — using the bundled client/js/config.js instead")
 
 
 def _load_env(path):
@@ -95,8 +95,8 @@ if _args.server_config:
     if _server_config_candidate.exists():
         _env_path = _server_config_candidate
     else:
-        print(f"[!] --server-config указывает на {_server_config_candidate}, но такого файла нет — "
-              f"использую встроенный server/.env (если он есть)")
+        print(f"[!] --server-config points to {_server_config_candidate}, but that file "
+              f"doesn't exist — using the bundled server/.env instead (if present)")
 _env = _load_env(_env_path)
 for _key, _value in _env.items():
     os.environ.setdefault(_key, _value)
