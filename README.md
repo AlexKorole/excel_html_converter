@@ -4,6 +4,20 @@ Turn Excel pivot tables, plain tables, and charts into browsable HTML reports â€
 
 ðŸ“º [Video walkthrough](https://youtu.be/KmjPOCm9-xI)
 
+## Screenshots
+
+| Report list | Table (sort & filter) |
+|---|---|
+| ![Report list](assets/index.jpg) | ![Table](assets/table.jpg) |
+
+| Pivot grid | Line chart |
+|---|---|
+| ![Pivot grid](assets/grid.jpg) | ![Line chart](assets/graph.jpg) |
+
+| Bar chart | Pie chart |
+|---|---|
+| ![Bar chart](assets/bar.jpg) | ![Pie chart](assets/diagram.jpg) |
+
 ## Quick start
 
 ```
