@@ -2,6 +2,8 @@
 
 Turn Excel pivot tables, plain tables, and charts into browsable HTML reports — no Excel and no plugins needed to view them, just a browser. A small self-hosted Python web app does the work: upload an `.xlsx`, get a shareable report page.
 
+📺 [Video walkthrough](https://youtu.be/KmjPOCm9-xI)
+
 ## Quick start
 
 ```
