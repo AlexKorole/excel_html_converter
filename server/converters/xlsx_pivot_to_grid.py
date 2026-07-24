@@ -39,8 +39,18 @@ def find_pivotgrid_pkg():
     """
     Ищет папку пакета pivotgrid-js:
       1) переменная окружения PIVOTGRID_PKG (если задана явно)
-      2) node_modules/pivotgrid-js рядом со скриптом
-      3) node_modules/pivotgrid-js в текущей рабочей папке
+      2) как "сестра" в том же node_modules, где лежит сам наш пакет —
+         НЕ зависит от рабочей папки вообще. Именно так npm раскладывает
+         поднятые (hoisted) зависимости: если наш пакет установлен через
+         npm install, он сам лежит в каком-то node_modules/excel-html-converter,
+         и pivotgrid-js почти всегда окажется рядом, в том же node_modules —
+         вне зависимости от того, из какой папки реально запущена команда
+         (нельзя полагаться на cwd: пользователь может запустить скрипт,
+         зайдя прямо в его папку, а не из корня своего проекта).
+      3) node_modules/pivotgrid-js рядом со скриптом (сценарий разработки
+         без npm — сам пакет НЕ внутри чужого node_modules)
+      4) node_modules/pivotgrid-js в текущей рабочей папке (последний
+         фолбэк, на случай нестандартной раскладки)
     """
     env_path = os.environ.get("PIVOTGRID_PKG")
     if env_path:
@@ -49,7 +59,15 @@ def find_pivotgrid_pkg():
             return p
         raise FileNotFoundError(f"PIVOTGRID_PKG указывает на {p}, но там нет dist/pivotgrid.js")
 
-    candidates = [
+    script_dir = Path(__file__).resolve().parent  # .../server/converters/
+
+    candidates = []
+    for parent in script_dir.parents:
+        if parent.name == "node_modules":
+            candidates.append(parent / "pivotgrid-js")
+            break
+
+    candidates += [
         Path(__file__).resolve().parent.parent.parent / "node_modules" / "pivotgrid-js",
         Path.cwd() / "node_modules" / "pivotgrid-js",
         Path.cwd().parent / "node_modules" / "pivotgrid-js",
