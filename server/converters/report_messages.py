@@ -27,7 +27,7 @@ MESSAGES = {
 
 
 def report_lang():
-    return os.environ.get("LANGUAGE", "ru")
+    return os.environ.get("LANGUAGE", "en")
 
 
 def rt(key, **kwargs):

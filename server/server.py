@@ -89,7 +89,7 @@ for _key, _value in _env.items():
 
 PORT = int(os.environ.get("PORT", 8000))
 HOST = os.environ.get("HOST", "localhost")
-LANGUAGE = os.environ.get("LANGUAGE", "ru")
+LANGUAGE = os.environ.get("LANGUAGE", "en")
 
 # REPORTS_DIR — НЕ внутри пакета по умолчанию. При установке через
 # npm install пакет целиком лежит в node_modules/, а node_modules — папка
