@@ -62,7 +62,14 @@ _arg_parser.add_argument("--client-config", dest="client_config", default=None,
                           help="Путь к внешнему config.js (вместо бандлового client/js/config.js)")
 _args, _ = _arg_parser.parse_known_args()
 
-CLIENT_CONFIG_OVERRIDE = Path(_args.client_config).resolve() if _args.client_config else None
+CLIENT_CONFIG_OVERRIDE = None
+if _args.client_config:
+    _client_config_candidate = Path(_args.client_config).resolve()
+    if _client_config_candidate.exists():
+        CLIENT_CONFIG_OVERRIDE = _client_config_candidate
+    else:
+        print(f"[!] --client-config указывает на {_client_config_candidate}, но такого файла нет — "
+              f"использую встроенный client/js/config.js")
 
 
 def _load_env(path):
@@ -82,7 +89,14 @@ def _load_env(path):
 # ВАЖНО: .env должен быть загружен и прокинут в os.environ ДО импорта
 # конвертеров — они читают свои дефолты (лимиты строк и т.п.) через
 # os.environ.get(...) на уровне модуля, в момент самого импорта.
-_env_path = Path(_args.server_config).resolve() if _args.server_config else (SERVER_DIR / ".env")
+_env_path = SERVER_DIR / ".env"
+if _args.server_config:
+    _server_config_candidate = Path(_args.server_config).resolve()
+    if _server_config_candidate.exists():
+        _env_path = _server_config_candidate
+    else:
+        print(f"[!] --server-config указывает на {_server_config_candidate}, но такого файла нет — "
+              f"использую встроенный server/.env (если он есть)")
 _env = _load_env(_env_path)
 for _key, _value in _env.items():
     os.environ.setdefault(_key, _value)
