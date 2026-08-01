@@ -32,7 +32,8 @@ Open http://localhost:8000 in your browser.
 - Reads classic (worksheet-based) pivot tables, plain worksheet tables, and charts (line / bar / pie) directly from `.xlsx` files.
 - Respects what Excel already shows: hidden filter values, autofilter-hidden rows, and date groupings (Year / Quarter / Month) are read from the file, not re-derived.
 - Renders each as its own standalone page — a PivotGrid-based grid for pivot tables (with expand/collapse), a sortable/filterable table for plain data, and an SVG chart for line/bar/pie — all read-only snapshots of what was already built in Excel.
-- A tiny web UI lists all generated reports: create, open, delete. Report generation runs in a separate OS process, so a large file never blocks the server or takes the whole app down if it runs out of memory.
+- A tiny web UI lists all generated reports: create, open, update, delete. Report generation runs in a separate OS process, so a large file never blocks the server or takes the whole app down if it runs out of memory.
+- **Update** re-runs the conversion for an existing report from a newly uploaded `.xlsx` — the report's id, name, and position in the list stay the same, only its content is replaced.
 
 ## Configuration
 

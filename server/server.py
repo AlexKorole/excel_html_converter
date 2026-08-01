@@ -27,6 +27,9 @@ REST API + раздача статики на стандартной библи�
   GET    /new                 - client/new.html
   GET    /api/reports         - JSON-список отчётов
   POST   /api/reports         - создание (multipart), запуск фоновой сборки
+  PUT    /api/reports/<id>    - пересборка существующего отчёта (тот же id и
+                                 имя, старое содержимое папки удаляется ПЕРЕД
+                                 стартом новой сборки — без атомарной подмены)
   DELETE /api/reports/<id>    - удаление отчёта целиком
   GET    /<любой путь>        - статика от корня проекта (client/js/..., server/reports/...)
 """
@@ -198,6 +201,60 @@ def build_report_background(report_id, xlsx_path, include_connected, pivot_limit
             pass
 
 
+def _start_build(report_id, name, created_at, xlsx_bytes, include_connected, pivot_limit, table_limit):
+    """Создаёт (или пересоздаёт — папка к этому моменту уже должна быть
+    удалена/создана заново вызывающим кодом) содержимое отчёта: пишет
+    исходный xlsx, meta.json со статусом "processing" и запускает фоновую
+    сборку в отдельном процессе + поток-наблюдатель. Общий код для
+    _handle_create и _handle_update — отличаются только тем, что кладут
+    в report_id/created_at (новые для create, сохранённые для update).
+
+    created_at и build_started_at — разные вещи: created_at не меняется
+    при update (иначе отчёт скакнёт в начало списка), а build_started_at
+    всегда "сейчас" — момент старта именно ТЕКУЩЕЙ сборки, по нему
+    считается таймер "обрабатывается... (N сек)" в reports-list.js. Если
+    таймер считать от created_at, при update он будет тикать от времени
+    самого первого создания отчёта, а не от начала пересборки.
+    """
+    report_dir = REPORTS_DIR / report_id
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    xlsx_path = report_dir / "_source.xlsx"
+    xlsx_path.write_bytes(xlsx_bytes)
+
+    meta = {
+        "id": report_id,
+        "name": name,
+        "created_at": created_at,
+        "build_started_at": datetime.now(timezone.utc).isoformat(),
+        "status": "processing",
+    }
+    write_meta(report_id, meta)
+
+    # Сборка — в отдельном ПРОЦЕССЕ (не потоке): падение изолировано,
+    # не заденет сам сервер.
+    process = multiprocessing.Process(
+        target=build_report_background,
+        args=(report_id, xlsx_path, include_connected, pivot_limit, table_limit),
+        daemon=True,
+    )
+    process.start()
+
+    # Лёгкий поток-наблюдатель — если процесс умрёт без записи статуса
+    # (например, OOM-kill), meta.json иначе навсегда останется в "processing".
+    def _watch(proc, rid):
+        proc.join()
+        m = read_meta(rid)
+        if m and m.get("status") == "processing":
+            m["status"] = "error"
+            m["error"] = t("process_died_unexpectedly", LANGUAGE, code=proc.exitcode)
+            write_meta(rid, m)
+
+    threading.Thread(target=_watch, args=(process, report_id), daemon=True).start()
+
+    return meta
+
+
 # ── multipart/form-data (свой разбор — cgi устарел и убран в Python 3.13) ───
 
 def parse_multipart(body, boundary):
@@ -277,13 +334,14 @@ class Handler(SimpleHTTPRequestHandler):
         return candidate
 
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
+        path_only = self.path.split("?", 1)[0]
+        if path_only == "/" or path_only == "/index.html":
             self._send_file(CLIENT_DIR / "index.html", "text/html; charset=utf-8")
-        elif self.path == "/new" or self.path == "/new.html":
+        elif path_only == "/new" or path_only == "/new.html":
             self._send_file(CLIENT_DIR / "new.html", "text/html; charset=utf-8")
-        elif self.path == "/client/js/config.js" and CLIENT_CONFIG_OVERRIDE:
+        elif path_only == "/client/js/config.js" and CLIENT_CONFIG_OVERRIDE:
             self._send_file(CLIENT_CONFIG_OVERRIDE, "application/javascript; charset=utf-8")
-        elif self.path == "/api/reports":
+        elif path_only == "/api/reports":
             self._send_json(list_reports())
         else:
             super().do_GET()
@@ -293,6 +351,13 @@ class Handler(SimpleHTTPRequestHandler):
             self._handle_create()
         else:
             self.send_error(404)
+
+    def do_PUT(self):
+        m = re.match(r"^/api/reports/([^/]+)$", self.path)
+        if not m:
+            self.send_error(404)
+            return
+        self._handle_update(unquote(m.group(1)))
 
     def do_DELETE(self):
         m = re.match(r"^/api/reports/([^/]+)$", self.path)
@@ -308,12 +373,20 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             self.send_error(404)
 
-    def _handle_create(self):
+    def _parse_report_form(self, require_name):
+        """Разбирает multipart-тело формы (общей для создания и обновления
+        отчёта) и валидирует поля. При require_name=False поле "name" не
+        обязательно — так и есть при обновлении, поскольку в форме оно
+        заблокировано (disabled) и браузер его вообще не отправляет; имя в
+        этом случае берётся из уже сохранённого meta.json, не из формы.
+
+        Возвращает (fields_dict, None) при успехе или (None, (message, status))
+        при ошибке валидации.
+        """
         content_type = self.headers.get("Content-Type", "")
         boundary_match = re.search(r"boundary=(.+)", content_type)
         if "multipart/form-data" not in content_type or not boundary_match:
-            self._send_json({"error": t("invalid_request", LANGUAGE)}, status=400)
-            return
+            return None, (t("invalid_request", LANGUAGE), 400)
 
         boundary = boundary_match.group(1).strip('"')
         length = int(self.headers.get("Content-Length", 0))
@@ -322,14 +395,15 @@ class Handler(SimpleHTTPRequestHandler):
 
         name_field = fields.get("name")
         file_field = fields.get("file")
-        if not name_field or not file_field or not file_field.get("filename"):
-            self._send_json({"error": t("name_and_file_required", LANGUAGE)}, status=400)
-            return
+        if (require_name and not name_field) or not file_field or not file_field.get("filename"):
+            key = "name_and_file_required" if require_name else "file_required"
+            return None, (t(key, LANGUAGE), 400)
 
-        name = name_field["value"].decode("utf-8", errors="replace").strip()
-        if not name:
-            self._send_json({"error": t("name_empty", LANGUAGE)}, status=400)
-            return
+        name = None
+        if name_field:
+            name = name_field["value"].decode("utf-8", errors="replace").strip()
+            if require_name and not name:
+                return None, (t("name_empty", LANGUAGE), 400)
 
         include_connected = "include_connected" in fields
 
@@ -349,51 +423,74 @@ class Handler(SimpleHTTPRequestHandler):
 
         pivot_limit, pivot_error = _optional_int_field("pivot_limit", "pivot_limit_label")
         if pivot_error:
-            self._send_json({"error": pivot_error}, status=400)
-            return
+            return None, (pivot_error, 400)
 
         table_limit, table_error = _optional_int_field("table_limit", "table_limit_label")
         if table_error:
-            self._send_json({"error": table_error}, status=400)
+            return None, (table_error, 400)
+
+        return {
+            "name": name,
+            "file_bytes": file_field["value"],
+            "include_connected": include_connected,
+            "pivot_limit": pivot_limit,
+            "table_limit": table_limit,
+        }, None
+
+    def _handle_create(self):
+        parsed, error = self._parse_report_form(require_name=True)
+        if error:
+            message, status = error
+            self._send_json({"error": message}, status=status)
             return
 
         report_id = uuid.uuid4().hex[:8]
-        report_dir = REPORTS_DIR / report_id
-        report_dir.mkdir(parents=True, exist_ok=True)
-
-        xlsx_path = report_dir / "_source.xlsx"
-        xlsx_path.write_bytes(file_field["value"])
-
-        meta = {
-            "id": report_id,
-            "name": name,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "status": "processing",
-        }
-        write_meta(report_id, meta)
-
-        # Сборка — в отдельном ПРОЦЕССЕ (не потоке): падение изолировано,
-        # не заденет сам сервер.
-        process = multiprocessing.Process(
-            target=build_report_background,
-            args=(report_id, xlsx_path, include_connected, pivot_limit, table_limit),
-            daemon=True,
+        meta = _start_build(
+            report_id=report_id,
+            name=parsed["name"],
+            created_at=datetime.now(timezone.utc).isoformat(),
+            xlsx_bytes=parsed["file_bytes"],
+            include_connected=parsed["include_connected"],
+            pivot_limit=parsed["pivot_limit"],
+            table_limit=parsed["table_limit"],
         )
-        process.start()
-
-        # Лёгкий поток-наблюдатель — если процесс умрёт без записи статуса
-        # (например, OOM-kill), meta.json иначе навсегда останется в "processing".
-        def _watch(proc, rid):
-            proc.join()
-            m = read_meta(rid)
-            if m and m.get("status") == "processing":
-                m["status"] = "error"
-                m["error"] = t("process_died_unexpectedly", LANGUAGE, code=proc.exitcode)
-                write_meta(rid, m)
-
-        threading.Thread(target=_watch, args=(process, report_id), daemon=True).start()
-
         self._send_json(meta, status=201)
+
+    def _handle_update(self, report_id):
+        report_dir = REPORTS_DIR / report_id
+        # защита от выхода за пределы reports/ через ../ в id - та же
+        # проверка, что и в do_DELETE
+        if not (report_dir.exists() and report_dir.is_dir()
+                and report_dir.resolve().parent == REPORTS_DIR.resolve()):
+            self._send_json({"error": t("report_not_found", LANGUAGE)}, status=404)
+            return
+
+        existing_meta = read_meta(report_id)
+        if not existing_meta:
+            self._send_json({"error": t("report_not_found", LANGUAGE)}, status=404)
+            return
+
+        parsed, error = self._parse_report_form(require_name=False)
+        if error:
+            message, status = error
+            self._send_json({"error": message}, status=status)
+            return
+
+        # Имя и id сохраняются от старого отчёта независимо от формы -
+        # переименование через Update не предусмотрено.
+        # Сервер сам удаляет старое содержимое ДО старта новой сборки
+        # (без атомарной подмены - окно гонки принято сознательно).
+        shutil.rmtree(report_dir)
+        meta = _start_build(
+            report_id=report_id,
+            name=existing_meta["name"],
+            created_at=existing_meta.get("created_at", datetime.now(timezone.utc).isoformat()),
+            xlsx_bytes=parsed["file_bytes"],
+            include_connected=parsed["include_connected"],
+            pivot_limit=parsed["pivot_limit"],
+            table_limit=parsed["table_limit"],
+        )
+        self._send_json(meta, status=200)
 
     def _send_file(self, path, content_type):
         try:

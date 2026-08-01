@@ -17,6 +17,8 @@ const I18N = {
     back_to_list: { ru: '\u2190 К списку отчётов', en: '\u2190 Back to reports' },
 
     no_reports_yet: { ru: 'Пока нет ни одного отчёта.', en: 'No reports yet.' },
+    update_btn: { ru: 'Обновить', en: 'Update' },
+    update_report_title: { ru: 'Обновить отчёт', en: 'Update report' },
     delete_btn: { ru: 'Удалить', en: 'Delete' },
     processing: { ru: 'обрабатывается...', en: 'processing...' },
     error_prefix: { ru: 'ошибка:', en: 'error:' },
@@ -27,6 +29,7 @@ const I18N = {
     fetch_list_failed: { ru: 'Не удалось получить список отчётов', en: 'Failed to load the report list' },
     create_failed: { ru: 'Не удалось создать отчёт', en: 'Failed to create the report' },
     delete_failed: { ru: 'Не удалось удалить отчёт', en: 'Failed to delete the report' },
+    update_failed: { ru: 'Не удалось обновить отчёт', en: 'Failed to update the report' },
   },
 
   t(key, vars) {

@@ -23,7 +23,8 @@
       statusHtml = '';
     } else if (r.status === 'processing') {
       nameHtml = escapeHtml(r.name);
-      statusHtml = `<span class="report-status status-processing">${I18N.t('processing')} (${formatElapsed(r.created_at)})</span>`;
+      const startedAt = r.build_started_at || r.created_at;
+      statusHtml = `<span class="report-status status-processing">${I18N.t('processing')} (${formatElapsed(startedAt)})</span>`;
     } else {
       nameHtml = escapeHtml(r.name);
       statusHtml = `<span class="report-status status-error">${I18N.t('error_prefix')} ${escapeHtml(r.error || '')}</span>`;
@@ -34,9 +35,17 @@
     const disabledAttr = r.status === 'processing' ? 'disabled' : '';
     li.innerHTML = `
       <div><span class="report-name">${nameHtml}</span>${statusHtml}</div>
-      <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}" ${disabledAttr}>${I18N.t('delete_btn')}</button>
+      <div class="report-actions">
+        <button class="btn btn-secondary btn-update" data-id="${r.id}" data-name="${escapeHtml(r.name)}" ${disabledAttr}>${I18N.t('update_btn')}</button>
+        <button class="btn btn-danger" data-id="${r.id}" data-name="${escapeHtml(r.name)}" ${disabledAttr}>${I18N.t('delete_btn')}</button>
+      </div>
     `;
-    li.querySelector('button').addEventListener('click', async (e) => {
+    li.querySelector('.btn-update').addEventListener('click', (e) => {
+      const id = e.target.getAttribute('data-id');
+      const name = e.target.getAttribute('data-name');
+      window.location.href = `/new?report_id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+    });
+    li.querySelector('.btn-danger').addEventListener('click', async (e) => {
       const id = e.target.getAttribute('data-id');
       const name = e.target.getAttribute('data-name');
       if (!confirm(I18N.t('confirm_delete', { name }))) return;

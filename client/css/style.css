@@ -25,6 +25,8 @@ h1 { font-size: 20px; }
 .status-processing { color: #f39c12; }
 .status-error { color: #e74c3c; }
 
+.report-actions { display: flex; gap: 8px; }
+
 .btn {
   border: none;
   border-radius: 6px;
@@ -35,6 +37,7 @@ h1 { font-size: 20px; }
   display: inline-block;
 }
 .btn-primary { background: #1a73e8; color: #fff; }
+.btn-secondary { background: #eef1f4; color: #333; }
 .btn-danger { background: #fdecea; color: #c0392b; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 

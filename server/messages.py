@@ -18,6 +18,14 @@ MESSAGES = {
         "ru": "Имя отчёта не может быть пустым",
         "en": "Report name cannot be empty",
     },
+    "file_required": {
+        "ru": "Выберите xlsx-файл",
+        "en": "Please select an xlsx file",
+    },
+    "report_not_found": {
+        "ru": "Отчёт не найден",
+        "en": "Report not found",
+    },
     "pivot_limit_label": {
         "ru": "лимит строк для сводной",
         "en": "pivot row limit",

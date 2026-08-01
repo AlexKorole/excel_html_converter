@@ -12,6 +12,13 @@ const Api = {
     return data;
   },
 
+  async updateReport(id, formData) {
+    const res = await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: 'PUT', body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || I18N.t('update_failed'));
+    return data;
+  },
+
   async deleteReport(id) {
     const res = await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(I18N.t('delete_failed'));
